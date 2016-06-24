@@ -1,0 +1,121 @@
+//
+//  ConnectRequest.m
+//  Lesson-UI-19-网络编程
+//
+//  Created by xalo on 15/8/26.
+//  Copyright (c) 2015年 西安蓝欧科技有限公司. All rights reserved.
+//
+
+#import "NetWorkingHelper.h"
+//#import "MBProgressHUD.h"
+@interface NetWorkingHelper ()<NSURLConnectionDelegate, NSURLConnectionDataDelegate>
+@property (nonatomic, retain) NSMutableData *activityListData;//接收请求回来的所有值
+
+
+@end
+
+@implementation NetWorkingHelper
+//#pragma mark 懒加载
+//- (NSMutableData *)activityListData {
+//    if (!_activityListData) {
+//        _activityListData = [[NSMutableData alloc] init];
+//    }
+//    return _activityListData;
+//}
+
+- (void)getRequesMethodWithUrlString:(NSString *)urlString parameter:(NSString *)parameter {
+    //初始化data
+    _activityListData = [[NSMutableData alloc] init];
+    //判断请求是否有参数，如果有，因为是get请求方式，所以urlstring需要拼接请求参数
+    NSMutableString *urlMutableString = [[NSMutableString alloc] initWithString:urlString];
+//    if (parameter) {
+////        [urlMutableString appendString:@"?"];
+//        [urlMutableString appendString:parameter];
+//    }
+    //创建url
+    NSURL *url = [[NSURL alloc] initWithString:urlMutableString];
+    //创建request
+    NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url];
+    //创建同步connect
+//    NSError *error;
+//    NSData *jsonData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
+    //创建异步连接
+    [NSURLConnection connectionWithRequest:request delegate:self];
+    //解析
+//    NSDictionary *jsonDic = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingAllowFragments error:nil];
+
+    
+//    //通过代理传值
+//    if ([self.delegate respondsToSelector:@selector(passValueWithDic:)]) {
+//        [self.delegate passValueWithDic:jsonDic];
+//    }
+    
+}
+- (void)postRequesMethodWithUrlString:(NSString *)urlString parameter:(NSString *)parameter {
+    //初始化data
+    _activityListData = [[NSMutableData alloc] init];
+    NSMutableString *urlMutableString = [[NSMutableString alloc] initWithString:urlString];
+    //创建url
+    NSURL *url = [[NSURL alloc] initWithString:urlMutableString];
+    //创建request
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
+    [request setHTTPMethod:@"POST"];
+    NSString *bodying = parameter;
+    NSData *bodyingData = [bodying dataUsingEncoding:NSUTF8StringEncoding];
+    [request setHTTPBody:bodyingData];
+//    //创建同步连接
+//    NSError *error;
+//    NSData *jsonData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
+
+    //通过block实现异步请求
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];//多线程，队列的初始化
+    [NSURLConnection sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+        //解析
+        if (!data) {
+            NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+            [notificationCenter postNotificationName:@"display" object:@"请设置网络连接"];
+            return;
+        }
+        NSDictionary *jsonDic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:nil];
+        //通过代理传值
+        if ([self.delegate respondsToSelector:@selector(passValueWithDic:)]) {
+                [self.delegate passValueWithDic:jsonDic];
+        }
+    }];
+    
+    
+//    //解析
+//    NSDictionary *jsonDic = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingAllowFragments error:nil];
+    
+    
+//    //通过代理传值
+//    if ([self.delegate respondsToSelector:@selector(passValueWithDic:)]) {
+//        [self.delegate passValueWithDic:jsonDic];
+//    }
+}
+#pragma mark NSURLConnectionDelegate-协议方法
+#pragma mark NSURLConnectionDataDelegate-协议方法
+//开始返回响应头，有可能带部分数据
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+}
+//返回数据
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+    //拼接服务器返回的数据
+    [self.activityListData appendData:data];
+}
+//连接错误信息
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    NSLog(@"链接错误！");
+}
+//连接结束，请求完成
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+    if (self.activityListData) {
+        NSDictionary *activityListDic = [NSJSONSerialization JSONObjectWithData:_activityListData options:NSJSONReadingAllowFragments error:nil];
+        //通过代理传值
+        if ([self.delegate respondsToSelector:@selector(passValueWithDic:)]) {
+            [self.delegate passValueWithDic:activityListDic];
+        }
+    }
+}
+
+@end
