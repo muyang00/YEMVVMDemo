@@ -55,12 +55,11 @@
     self.scoreLabel2 = [[UILabel alloc]init];
      [self addSubview:self.scoreLabel2];
     
-
-    [self MVVMlayoutSubviews];
 }
 
 
-- (void)MVVMlayoutSubviews{
+- (void)layoutSubviews{
+    [super layoutSubviews];
     
     [self.team1ImageView mas_makeConstraints:^(MASConstraintMaker *make){
         make.left.top.mas_equalTo(10);
